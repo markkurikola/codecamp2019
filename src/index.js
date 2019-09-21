@@ -65,9 +65,9 @@ function infiniteStream(
   const { Transform } = require("stream");
   var ws;
   const Websocket = require("ws");
-  const wss = new WebSocket.Server({ port: 8080 });
-  wss.on("connection", function connection(ws) {
-    ws = ws;
+  const wss = new Websocket.Server({ port: 9000 });
+  wss.on("connection", function connection(conn) {
+    ws = conn;
   });
 
   // Node-Record-lpcm16
@@ -151,7 +151,8 @@ function infiniteStream(
       const words = stream.results[0].alternatives[0].words;
       stream.results[0].alternatives[0].words.forEach(word => {
         wordsPerSpeaker[word.speakerTag - 1]++;
-        timePerSpeaker[word.speakerTag - 1] += calculateTime(word);
+        timePerSpeaker[word.speakerTag - 1] =
+	Number(Number(timePerSpeaker[word.speakerTag - 1] + calculateTime(word)).toFixed(2));
       });
 
       // console.log("words", words);
@@ -172,7 +173,6 @@ function infiniteStream(
 
       isFinalEndTime = resultEndTime;
       lastTranscriptWasFinal = true;
-      console.log("restarting stream because we got a final response");
       restartStream();
     } else {
       // Make sure transcript does not exceed console character length
@@ -188,11 +188,9 @@ function infiniteStream(
 
   const calculateTime = word => {
     const startTime =
-      Number(word.startTime.seconds) +
-      Math.round(word.startTime.nanos / Math.pow(10, 8)) / 10;
+      Number(word.startTime.seconds) + word.startTime.nanos / Math.pow(10, 9);
     const endTime =
-      Number(word.endTime.seconds) +
-      Math.round(word.endTime.nanos / Math.pow(10, 8)) / 10;
+      Number(word.endTime.seconds) + word.endTime.nanos / Math.pow(10, 9);
     return endTime - startTime;
   };
 
@@ -252,9 +250,7 @@ function infiniteStream(
     if (!lastTranscriptWasFinal) {
       process.stdout.write(`\n`);
     }
-    process.stdout.write(
-      chalk.yellow(`${streamingLimit * restartCounter}: RESTARTING REQUEST\n`)
-    );
+    //process.stdout.write(chalk.yellow(`${streamingLimit * restartCounter}: RESTARTING REQUEST\n`));
 
     newStream = true;
 
