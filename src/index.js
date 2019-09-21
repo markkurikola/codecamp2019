@@ -58,7 +58,7 @@ function infiniteStream(
   encoding = "LINEAR16";
   sampleRateHertz = 16000;
   languageCode = "en-US";
-  streamingLimit = 5000; // ms - set to low number for demo purposes
+  streamingLimit = 15000; // ms - set to low number for demo purposes
   speakerCount = 4; // for demo only
 
   const chalk = require("chalk");
@@ -79,12 +79,13 @@ function infiniteStream(
     languageCode: languageCode,
     enableSpeakerDiarization: true,
     diarizationSpeakerCount: speakerCount,
+    useEnhanced: true
     // model: `phone_call`
   };
 
   const request = {
     config,
-    interimResults: false
+    interimResults: true
   };
 
   let recognizeStream = null;
@@ -110,7 +111,7 @@ function infiniteStream(
           // restartStream();
         } else {
           console.error("API request error " + err);
-	console.error('error code', err.code);
+          console.error("error code", err.code);
         }
       })
       .on("data", speechCallback);
@@ -133,7 +134,7 @@ function infiniteStream(
     process.stdout.cursorTo(0);
     let stdoutText = "";
     if (stream.results[0] && stream.results[0].alternatives[0]) {
-	console.log('words', stream.results[0].alternatives[0].words);
+      console.log("words", stream.results[0].alternatives[0].words);
       stdoutText =
         correctedTime + ": " + stream.results[0].alternatives[0].transcript;
     }
@@ -224,7 +225,7 @@ function infiniteStream(
       threshold: 0, // Silence threshold
       silence: 5 * 60,
       keepSilence: true,
-//	recordProgram: 'arecord',
+      //	recordProgram: 'arecord',
       recordProgram: "sox -d -b 16000 -e signed-integer" // Try also "arecord" or "sox"
     })
     .stream()
