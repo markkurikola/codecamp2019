@@ -63,6 +63,12 @@ function infiniteStream(
 
   const chalk = require("chalk");
   const { Transform } = require("stream");
+  var ws;
+  const Websocket = require("ws");
+  const wss = new WebSocket.Server({ port: 8080 });
+  wss.on("connection", function connection(ws) {
+    ws = ws;
+  });
 
   // Node-Record-lpcm16
   const recorder = require("node-record-lpcm16");
@@ -142,13 +148,22 @@ function infiniteStream(
     }
 
     if (stream.results[0].isFinal) {
-	const words = stream.results[0].alternatives[0].words;
+      const words = stream.results[0].alternatives[0].words;
       stream.results[0].alternatives[0].words.forEach(word => {
         wordsPerSpeaker[word.speakerTag - 1]++;
         timePerSpeaker[word.speakerTag - 1] += calculateTime(word);
       });
 
-// console.log("words", words);
+      // console.log("words", words);
+
+      if (ws) {
+        ws.send(
+          JSON.stringify({
+            wordsPerSpeaker: wordsPerSpeaker,
+            timePerSpeaker: timePerSpeaker
+          })
+        );
+      }
 
       console.log("words per speaker", wordsPerSpeaker);
       console.log("time per speaker", timePerSpeaker);
@@ -157,8 +172,8 @@ function infiniteStream(
 
       isFinalEndTime = resultEndTime;
       lastTranscriptWasFinal = true;
-	console.log('restarting stream because we got a final response');
-	restartStream();
+      console.log("restarting stream because we got a final response");
+      restartStream();
     } else {
       // Make sure transcript does not exceed console character length
       if (stdoutText.length > process.stdout.columns) {
@@ -173,9 +188,11 @@ function infiniteStream(
 
   const calculateTime = word => {
     const startTime =
-      Number(word.startTime.seconds) + Math.round(word.startTime.nanos / Math.pow(10, 8)) / 10;
+      Number(word.startTime.seconds) +
+      Math.round(word.startTime.nanos / Math.pow(10, 8)) / 10;
     const endTime =
-      Number(word.endTime.seconds) + Math.round(word.endTime.nanos / Math.pow(10, 8)) / 10;
+      Number(word.endTime.seconds) +
+      Math.round(word.endTime.nanos / Math.pow(10, 8)) / 10;
     return endTime - startTime;
   };
 
@@ -227,7 +244,7 @@ function infiniteStream(
     resultEndTime = 0;
 
     lastAudioInput = [];
-	audioInput = [];
+    audioInput = [];
     // lastAudioInput = audioInput;
 
     restartCounter++;
@@ -250,7 +267,6 @@ function infiniteStream(
       threshold: 0, // Silence threshold
       silence: 5 * 60,
       keepSilence: true,
-      //	recordProgram: 'arecord',
       recordProgram: "sox -d -b 16000 -e signed-integer" // Try also "arecord" or "sox"
     })
     .stream()
