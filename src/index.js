@@ -58,7 +58,7 @@ function infiniteStream(
   encoding = "LINEAR16";
   sampleRateHertz = 16000;
   languageCode = "en-US";
-  streamingLimit = 15000; // ms - set to low number for demo purposes
+  streamingLimit = 60 * 1000; // ms - set to low number for demo purposes
   speakerCount = 4; // for demo only
 
   const chalk = require("chalk");
@@ -98,6 +98,9 @@ function infiniteStream(
   let newStream = true;
   let bridgingOffset = 0;
   let lastTranscriptWasFinal = false;
+  let wordsPerSpeaker = new Array(speakerCount).fill(0);
+  let timePerSpeaker = new Array(speakerCount).fill(0);
+  let previousWords = [];
 
   function startStream() {
     // Clear current audioInput
@@ -117,7 +120,7 @@ function infiniteStream(
       .on("data", speechCallback);
 
     // Restart stream when streamingLimit expires
-    setTimeout(restartStream, streamingLimit);
+    // setTimeout(restartStream, streamingLimit);
   }
 
   const speechCallback = stream => {
@@ -139,11 +142,23 @@ function infiniteStream(
     }
 
     if (stream.results[0].isFinal) {
-      console.log("words", stream.results[0].alternatives[0].words);
+	const words = stream.results[0].alternatives[0].words;
+      stream.results[0].alternatives[0].words.forEach(word => {
+        wordsPerSpeaker[word.speakerTag - 1]++;
+        timePerSpeaker[word.speakerTag - 1] += calculateTime(word);
+      });
+
+// console.log("words", words);
+
+      console.log("words per speaker", wordsPerSpeaker);
+      console.log("time per speaker", timePerSpeaker);
+
       process.stdout.write(chalk.green(`${stdoutText}\n`));
 
       isFinalEndTime = resultEndTime;
       lastTranscriptWasFinal = true;
+	console.log('restarting stream because we got a final response');
+	restartStream();
     } else {
       // Make sure transcript does not exceed console character length
       if (stdoutText.length > process.stdout.columns) {
@@ -154,6 +169,14 @@ function infiniteStream(
 
       lastTranscriptWasFinal = false;
     }
+  };
+
+  const calculateTime = word => {
+    const startTime =
+      Number(word.startTime.seconds) + Math.round(word.startTime.nanos / Math.pow(10, 8)) / 10;
+    const endTime =
+      Number(word.endTime.seconds) + Math.round(word.endTime.nanos / Math.pow(10, 8)) / 10;
+    return endTime - startTime;
   };
 
   const audioInputStreamTransform = new Transform({
@@ -204,7 +227,8 @@ function infiniteStream(
     resultEndTime = 0;
 
     lastAudioInput = [];
-    lastAudioInput = audioInput;
+	audioInput = [];
+    // lastAudioInput = audioInput;
 
     restartCounter++;
 
