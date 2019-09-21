@@ -63,12 +63,6 @@ function infiniteStream(
 
   const chalk = require("chalk");
   const { Transform } = require("stream");
-  var ws;
-  const Websocket = require("ws");
-  const wss = new WebSocket.Server({ port: 8080 });
-  wss.on("connection", function connection(ws) {
-    ws = ws;
-  });
 
   // Node-Record-lpcm16
   const recorder = require("node-record-lpcm16");
@@ -104,9 +98,21 @@ function infiniteStream(
   let newStream = true;
   let bridgingOffset = 0;
   let lastTranscriptWasFinal = false;
+  let previousWords = [];
   let wordsPerSpeaker = new Array(speakerCount).fill(0);
   let timePerSpeaker = new Array(speakerCount).fill(0);
-  let previousWords = [];
+  let interimWords = "";
+
+  var express = require("express");
+  var app = express();
+  app.listen(9000);
+  app.get("/info", function(req, res) {
+    res.send({
+      interimResults: interimWords,
+      wordCountData: wordsPerSpeaker,
+      timePerSpeaker: timePerSpeaker
+    });
+  });
 
   function startStream() {
     // Clear current audioInput
@@ -156,15 +162,6 @@ function infiniteStream(
 
       // console.log("words", words);
 
-      if (ws) {
-        ws.send(
-          JSON.stringify({
-            wordsPerSpeaker: wordsPerSpeaker,
-            timePerSpeaker: timePerSpeaker
-          })
-        );
-      }
-
       console.log("words per speaker", wordsPerSpeaker);
       console.log("time per speaker", timePerSpeaker);
 
@@ -179,6 +176,7 @@ function infiniteStream(
       if (stdoutText.length > process.stdout.columns) {
         stdoutText =
           stdoutText.substring(0, process.stdout.columns - 4) + "...";
+        interimWords = stdoutText;
       }
       process.stdout.write(chalk.red(`${stdoutText}`));
 
