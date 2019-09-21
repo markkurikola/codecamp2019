@@ -134,12 +134,12 @@ function infiniteStream(
     process.stdout.cursorTo(0);
     let stdoutText = "";
     if (stream.results[0] && stream.results[0].alternatives[0]) {
-      console.log("words", stream.results[0].alternatives[0].words);
       stdoutText =
         correctedTime + ": " + stream.results[0].alternatives[0].transcript;
     }
 
     if (stream.results[0].isFinal) {
+      console.log("words", stream.results[0].alternatives[0].words);
       process.stdout.write(chalk.green(`${stdoutText}\n`));
 
       isFinalEndTime = resultEndTime;
@@ -193,6 +193,7 @@ function infiniteStream(
   });
 
   function restartStream() {
+    process.removeAllListeners();
     if (recognizeStream) {
       recognizeStream.removeListener("data", speechCallback);
       recognizeStream = null;
