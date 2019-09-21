@@ -1,0 +1,37 @@
+body {
+  font-family: sans-serif;
+  display: flex;
+  align-items: center;
+}
+
+html {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  height: 100vh;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+.circles {
+  display: flex;
+  align-items: center;
+}
+
+.circle {
+  border-radius: 50%;
+  display: inline-block;
+  transition: width 0.33s, height 0.33s, color 0.33s;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.content {
+  height: 600px;
+}
