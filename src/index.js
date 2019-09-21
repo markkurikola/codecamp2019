@@ -55,11 +55,11 @@ function infiniteStream(
 ) {
   // [START speech_transcribe_infinite_streaming]
 
-  const encoding = "LINEAR16";
-  const sampleRateHertz = 16000;
-  const languageCode = "en-US";
-  const streamingLimit = 5000; // ms - set to low number for demo purposes
-  const speakerCount = 4; // for demo only
+  encoding = "LINEAR16";
+  sampleRateHertz = 16000;
+  languageCode = "en-US";
+  streamingLimit = 5000; // ms - set to low number for demo purposes
+  speakerCount = 4; // for demo only
 
   const chalk = require("chalk");
   const { Transform } = require("stream");
@@ -79,12 +79,12 @@ function infiniteStream(
     languageCode: languageCode,
     enableSpeakerDiarization: true,
     diarizationSpeakerCount: speakerCount,
-    model: `phone_call`
+    // model: `phone_call`
   };
 
   const request = {
     config,
-    interimResults: true
+    interimResults: false
   };
 
   let recognizeStream = null;
@@ -101,6 +101,7 @@ function infiniteStream(
   function startStream() {
     // Clear current audioInput
     audioInput = [];
+
     // Initiate (Reinitiate) a recognize stream
     recognizeStream = client
       .streamingRecognize(request)
@@ -109,6 +110,7 @@ function infiniteStream(
           // restartStream();
         } else {
           console.error("API request error " + err);
+	console.error('error code', err.code);
         }
       })
       .on("data", speechCallback);
@@ -131,6 +133,7 @@ function infiniteStream(
     process.stdout.cursorTo(0);
     let stdoutText = "";
     if (stream.results[0] && stream.results[0].alternatives[0]) {
+	console.log('words', stream.results[0].alternatives[0].words);
       stdoutText =
         correctedTime + ": " + stream.results[0].alternatives[0].transcript;
     }
@@ -221,7 +224,8 @@ function infiniteStream(
       threshold: 0, // Silence threshold
       silence: 5 * 60,
       keepSilence: true,
-      recordProgram: "rec" // Try also "arecord" or "sox"
+//	recordProgram: 'arecord',
+      recordProgram: "sox -d -b 16000 -e signed-integer" // Try also "arecord" or "sox"
     })
     .stream()
     .on("error", err => {
